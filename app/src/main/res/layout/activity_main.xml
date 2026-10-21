@@ -1,0 +1,92 @@
+
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#F5F7FB">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="AI Vision Assistant"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:textColor="#17365D"
+            android:gravity="center"
+            android:layout_marginTop="28dp"
+            android:layout_marginBottom="12dp"
+            android:importantForAccessibility="yes" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="See, understand, and listen."
+            android:textSize="18sp"
+            android:textColor="#444B55"
+            android:gravity="center"
+            android:layout_marginBottom="32dp" />
+
+        <Button
+            android:id="@+id/btnCaptureImage"
+            android:layout_width="match_parent"
+            android:layout_height="68dp"
+            android:text="Capture Image"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnChooseImage"
+            android:layout_width="match_parent"
+            android:layout_height="68dp"
+            android:text="Choose Image"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnReadText"
+            android:layout_width="match_parent"
+            android:layout_height="68dp"
+            android:text="Read Text"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:layout_marginBottom="16dp" />
+        <Button
+            android:id="@+id/btnSpeakText"
+            android:layout_width="match_parent"
+            android:layout_height="68dp"
+            android:text="Listen to Text"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:layout_marginBottom="16dp" />
+        <Button
+            android:id="@+id/btnDescribeImage"
+            android:layout_width="match_parent"
+            android:layout_height="68dp"
+            android:text="Describe Image"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:id="@+id/txtStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Welcome! Choose an option to get started."
+            android:textSize="16sp"
+            android:textColor="#333333"
+            android:gravity="center"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp" />
+
+    </LinearLayout>
+</ScrollView>
