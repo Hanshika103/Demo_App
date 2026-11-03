@@ -2,6 +2,11 @@
 package com.example.demo;
 
 import android.content.ContentValues;
+
+import com.google.mlkit.nl.translate.Translation;
+import com.google.mlkit.nl.translate.Translator;
+import com.google.mlkit.nl.translate.TranslatorOptions;
+
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -39,6 +44,9 @@ public class MainActivity extends AppCompatActivity {
 
     private String recognizedText = "";
     private boolean ttsReady = false;
+
+    private Translator hindiTranslator;
+
 
     // Gallery image picker
     private final ActivityResultLauncher<String> imagePicker =
@@ -80,6 +88,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        TranslatorOptions options = new TranslatorOptions.Builder()
+                .setSourceLanguage("en")
+                .setTargetLanguage("hi")
+                .build();
+
+        hindiTranslator = Translation.getClient(options);
+
 
         txtStatus = findViewById(R.id.txtStatus);
 
@@ -233,15 +249,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     private void speakRecognizedText() {
-        if (recognizedText.trim().isEmpty()) {
-            txtStatus.setText(
-                    "Please choose an image and tap Read Text first."
-            );
+        String text = txtStatus.getText().toString().trim();
+
+        if (text.isEmpty()) {
+            txtStatus.setText("Please describe an image first.");
             return;
         }
 
-        if (!ttsReady) {
+        if (!ttsReady || textToSpeech == null) {
             Toast.makeText(
                     this,
                     "Speech engine is not ready. Please try again.",
@@ -251,12 +268,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         textToSpeech.speak(
-                recognizedText,
+                text,
                 TextToSpeech.QUEUE_FLUSH,
                 null,
-                "recognized_text"
+                "vision_description"
         );
     }
+
+
 
 
     private void describeImage() {
@@ -267,7 +286,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        txtStatus.setText("Describing image...");
+        txtStatus.setText("Analyzing image...");
 
         try {
             InputImage image = InputImage.fromFilePath(
@@ -277,63 +296,51 @@ public class MainActivity extends AppCompatActivity {
 
             imageLabeler.process(image)
                     .addOnSuccessListener(labels -> {
-                        StringBuilder description =
-                                new StringBuilder();
-
-                        description.append(
-                                "Image Description\n\n"
-                        );
-
-                        int count = 0;
+                        java.util.List<String> englishLabels =
+                                new java.util.ArrayList<>();
 
                         for (ImageLabel label : labels) {
-                            // Ignore labels below 70% confidence
-                            if (label.getConfidence() < 0.70f) {
-                                continue;
+                            if (label.getConfidence() >= 0.40f) {
+                                englishLabels.add(label.getText());
                             }
-
-                            String name = label.getText();
-
-                            if (count == 0) {
-                                description.append(
-                                        "This image contains "
-                                );
-                            } else if (count == 1) {
-                                description.append(
-                                        ". It may also contain "
-                                );
-                            } else {
-                                description.append(", ");
-                            }
-
-                            description.append(name);
-                            count++;
                         }
 
-                        if (count == 0) {
+                        if (englishLabels.isEmpty()) {
                             txtStatus.setText(
-                                    "I could not identify clear objects. "
-                                            + "Try a brighter, clearer photo."
+                                    "Clear objects nahi mile. "
+                                            + "Try a clearer photo."
                             );
                             return;
                         }
 
-                        description.append(".");
-
                         txtStatus.setText(
-                                description.toString()
+                                "Preparing Hindi translation..."
                         );
+
+                        hindiTranslator.downloadModelIfNeeded()
+                                .addOnSuccessListener(unused -> {
+                                    translateLabels(englishLabels);
+                                })
+                                .addOnFailureListener(e -> {
+                                    android.util.Log.e(
+                                            "AI_VISION",
+                                            "Hindi model download failed",
+                                            e
+                                    );
+                                    txtStatus.setText(
+                                            "Hindi model download failed. "
+                                                    + "Check internet and try again."
+                                    );
+                                });
                     })
                     .addOnFailureListener(e -> {
-                        txtStatus.setText(
-                                "Unable to describe this image. "
-                                        + "Please try again."
-                        );
-
                         android.util.Log.e(
                                 "AI_VISION",
                                 "Image labeling failed",
                                 e
+                        );
+                        txtStatus.setText(
+                                "Could not analyze image. Try again."
                         );
                     });
 
@@ -344,6 +351,67 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+
+    private void translateLabels(
+            java.util.List<String> englishLabels) {
+
+        java.util.List<String> hindiLabels =
+                new java.util.ArrayList<>();
+
+        translateNextLabel(englishLabels, hindiLabels, 0);
+    }
+
+    private void translateNextLabel(
+            java.util.List<String> englishLabels,
+            java.util.List<String> hindiLabels,
+            int index) {
+
+        if (index >= englishLabels.size()) {
+            StringBuilder result = new StringBuilder();
+            result.append("Image Description / तस्वीर का विवरण\n\n");
+            result.append("English labels: ");
+            result.append(englishLabels.toString());
+            result.append("\n\nHindi description: तस्वीर में ");
+            for (int i = 0; i < hindiLabels.size(); i++) {
+                if (i > 0) {
+                    result.append(", ");
+                }
+                result.append(hindiLabels.get(i));
+            }
+
+            result.append(" दिखाई दे सकते हैं।");
+            txtStatus.setText(result.toString());
+            return;
+        }
+
+        hindiTranslator.translate(englishLabels.get(index))
+                .addOnSuccessListener(translatedText -> {
+                    android.util.Log.d(
+                            "AI_VISION",
+                            englishLabels.get(index) + " -> " + translatedText
+                    );
+
+                    hindiLabels.add(translatedText);
+
+                    translateNextLabel(
+                            englishLabels,
+                            hindiLabels,
+                            index + 1
+                    );
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e(
+                            "AI_VISION",
+                            "Label translation failed",
+                            e
+                    );
+
+                    txtStatus.setText(
+                            "Hindi translation failed. Please retry."
+                    );
+                });
+    }
 
     @Override
     protected void onDestroy() {

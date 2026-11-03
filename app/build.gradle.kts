@@ -42,6 +42,9 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.material)
     testImplementation(libs.junit)
+
+    implementation("com.google.mlkit:translate:17.0.3")
+
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
 }
